@@ -15,7 +15,8 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func UploadHandler(w http.ResponseWriter, r *http.Request) {
-	err := r.ParseMultipartForm(0)
+	const maxUploadSize = 10 << 20
+	err := r.ParseMultipartForm(maxUploadSize)
 	if err != nil {
 		http.Error(w, "failed to parse multipart form: "+err.Error(), http.StatusInternalServerError)
 		return
@@ -56,10 +57,6 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	_, err = w.Write([]byte(converted))
-	if err != nil {
-		http.Error(w, "server error: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("File uploaded successfully"))
 }
