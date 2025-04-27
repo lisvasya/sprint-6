@@ -41,8 +41,19 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 
 	ext := filepath.Ext(header.Filename)
 	now := time.Now().UTC().Format("20060102_150405")
+	outputDir := "./uploads"
 
-	localFileName := now + "_converted" + ext
+	// Создаем директорию, если она не существует
+	if _, err := os.Stat(outputDir); os.IsNotExist(err) {
+		err := os.MkdirAll(outputDir, 0755)
+		if err != nil {
+			http.Error(w, "failed to create output directory: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+
+	// Формирование пути для файла
+	localFileName := filepath.Join(outputDir, now+"_converted"+ext)
 
 	f, err := os.Create(localFileName)
 	if err != nil {
