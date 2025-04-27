@@ -15,12 +15,13 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func UploadHandler(w http.ResponseWriter, r *http.Request) {
-	const maxUploadSize = 10 << 20
+	const maxUploadSize = 10 << 20 // 10 MB
 	err := r.ParseMultipartForm(maxUploadSize)
 	if err != nil {
 		http.Error(w, "failed to parse multipart form: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
+
 	file, header, err := r.FormFile("file")
 	if err != nil {
 		http.Error(w, "failed to get uploaded file: "+err.Error(), http.StatusInternalServerError)
@@ -28,46 +29,41 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
+	// Чтение данных из файла
 	data, err := io.ReadAll(file)
 	if err != nil {
-		http.Error(w, "failed to get uploaded file: "+err.Error(), http.StatusInternalServerError)
+		http.Error(w, "failed to read uploaded file: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	// Преобразование данных
 	converted, err := service.Convert(string(data))
 	if err != nil {
 		http.Error(w, "failed to convert data: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
+	// Определение расширения и создание пути для сохранения файла
 	ext := filepath.Ext(header.Filename)
 	now := time.Now().UTC().Format("20060102_150405")
-	outputDir := "./uploads"
+	localFileName := now + "_converted" + ext // Папка для хранения файлов
 
-	// Создаем директорию, если она не существует
-	if _, err := os.Stat(outputDir); os.IsNotExist(err) {
-		err := os.MkdirAll(outputDir, 0755)
-		if err != nil {
-			http.Error(w, "failed to create output directory: "+err.Error(), http.StatusInternalServerError)
-			return
-		}
-	}
-
-	// Формирование пути для файла
-	localFileName := filepath.Join(outputDir, now+"_converted"+ext)
-
+	// Сохраняем результат в файл
 	f, err := os.Create(localFileName)
 	if err != nil {
-		http.Error(w, "failed to write to output file: "+err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Failed to create output file: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 	defer f.Close()
 
+	// Записываем конвертированные данные в файл
 	_, err = f.WriteString(converted)
 	if err != nil {
-		http.Error(w, "failed to write to output file: "+err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Failed to write to output file: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
+	// Ответ пользователю
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("File uploaded successfully"))
 }

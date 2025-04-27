@@ -9,15 +9,17 @@ import (
 )
 
 type Server struct {
-	logger *log.Logger
-	server *http.Server
+	Server *http.Server
+	Logger *log.Logger
 }
 
 func NewServer(logger *log.Logger) *Server {
+	// Создаем новый мультиплексор (роутер)
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("/", handlers.IndexHandler)
-	mux.HandleFunc("/upload", handlers.UploadHandler)
+	// Регистрируем хендлеры
+	mux.HandleFunc("/", handlers.IndexHandler)        // Страница индекса
+	mux.HandleFunc("/upload", handlers.UploadHandler) // Обработка загрузки файла
 
 	s := &http.Server{
 		Addr:         ":8080",
@@ -28,11 +30,12 @@ func NewServer(logger *log.Logger) *Server {
 		IdleTimeout:  15 * time.Second,
 	}
 	return &Server{
-		logger: logger,
-		server: s,
+		Logger: logger,
+		Server: s,
 	}
 
 }
-func (s *Server) ListenAndServe() error {
-	return s.server.ListenAndServe()
+func (s *Server) Run() error {
+	s.Logger.Println("Server started on :8080")
+	return s.Server.ListenAndServe()
 }
