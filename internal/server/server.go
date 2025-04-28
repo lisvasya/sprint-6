@@ -14,7 +14,7 @@ type Server struct {
 }
 
 func NewServer(logger *log.Logger) *http.Server {
-	// Создаем новый мультиплексор (роутер)
+	// Создаем новый роутер
 	mux := http.NewServeMux()
 
 	// Регистрируем хендлеры
