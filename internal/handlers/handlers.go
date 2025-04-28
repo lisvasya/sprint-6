@@ -18,14 +18,6 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Выводим текущую рабочую директорию для отладки
-	dir, err := os.Getwd()
-	if err != nil {
-		http.Error(w, "Failed to get current directory: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-	fmt.Println("Current working directory:", dir)
-
 	data, err := os.ReadFile("../index.html")
 	if err != nil {
 		http.Error(w, "Failed to read index.html: "+err.Error(), http.StatusInternalServerError)
@@ -38,66 +30,68 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 
 // UploadHandler отвечает за загрузку файла и конвертацию
 func UploadHandler(w http.ResponseWriter, r *http.Request) {
+	// Ограничиваем только метод POST
 	if r.Method != http.MethodPost {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		w.Write([]byte("Method not allowed"))
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	const maxUploadSize = 10 << 20 // 10 MB
-	err := r.ParseMultipartForm(maxUploadSize)
+	// Проверяем, что тип запроса multipart/form-data
+	contentType := r.Header.Get("Content-Type")
+	if contentType == "" || contentType[:19] != "multipart/form-data" {
+		http.Error(w, "Content-Type isn't multipart/form-data", http.StatusBadRequest)
+		return
+	}
+
+	// Парсим multipart форму
+	err := r.ParseMultipartForm(10 << 20) // 10 МБ
 	if err != nil {
-		http.Error(w, "failed to parse multipart form: "+err.Error(), http.StatusInternalServerError)
+		http.Error(w, "failed to parse multipart form: "+err.Error(), http.StatusBadRequest)
 		return
 	}
-
-	// Логируем данные запроса
-	fmt.Println("Form parsed successfully")
 
 	// Получаем файл из формы
-	file, header, err := r.FormFile("myFile")
+	file, handler, err := r.FormFile("myFile")
 	if err != nil {
-		http.Error(w, "failed to get uploaded file: "+err.Error(), http.StatusInternalServerError)
-		fmt.Println("Error getting uploaded file:", err)
+		http.Error(w, "failed to get uploaded file: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 	defer file.Close()
 
-	fmt.Println("Uploaded file:", header.Filename)
-
-	// Чтение данных из файла
-	data, err := io.ReadAll(file)
+	// Читаем содержимое файла
+	fileBytes, err := io.ReadAll(file)
 	if err != nil {
 		http.Error(w, "failed to read uploaded file: "+err.Error(), http.StatusInternalServerError)
-		fmt.Println("Error reading file data:", err)
 		return
 	}
 
-	// Преобразование данных
-	converted, err := service.Convert(string(data))
+	// Вызываем функцию автоопределения типа и конвертации
+	convertedStr, err := service.Convert(string(fileBytes))
 	if err != nil {
-		http.Error(w, "failed to convert data: "+err.Error(), http.StatusInternalServerError)
+		http.Error(w, "failed to convert file: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	// Сохранение результата в файл
-	ext := filepath.Ext(header.Filename)
-	now := time.Now().UTC().Format("20060102_150405")
-	localFileName := now + "_converted" + ext
-	f, err := os.Create(localFileName)
+	// Генерируем имя для нового файла
+	extension := filepath.Ext(handler.Filename)
+	newFileName := fmt.Sprintf("%s_converted%s", time.Now().UTC().Format("20060102_150405"), extension)
+
+	// Создаем новый файл
+	newFile, err := os.Create(newFileName)
 	if err != nil {
-		http.Error(w, "Failed to create output file: "+err.Error(), http.StatusInternalServerError)
+		http.Error(w, "failed to create output file: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
-	defer f.Close()
+	defer newFile.Close()
 
-	_, err = f.WriteString(converted)
+	// Записываем результат конвертации в новый файл
+	_, err = newFile.WriteString(convertedStr)
 	if err != nil {
-		http.Error(w, "Failed to write to output file: "+err.Error(), http.StatusInternalServerError)
+		http.Error(w, "failed to write to output file: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	// Ответ клиенту
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("File uploaded and converted successfully"))
+	// Отправляем результат конвертации пользователю
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	_, _ = w.Write([]byte(convertedStr))
 }
