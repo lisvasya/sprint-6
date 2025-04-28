@@ -12,10 +12,11 @@ func main() {
 	logger := log.New(os.Stdout, "server: ", log.Lshortfile)
 
 	// Создаем сервер с помощью функции из пакета server
-	srv := server.NewServer(logger)
+	s := server.NewServer(logger)
+	logger.Println("start the server")
 
 	// Запускаем сервер и проверяем ошибки
-	if err := srv.Run(); err != nil {
+	if err := s.ListenAndServe(); err != nil {
 		// Если возникла ошибка при запуске сервера, выводим её с Fatal
 		logger.Fatal("Server failed to start: ", err)
 	}

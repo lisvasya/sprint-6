@@ -13,7 +13,7 @@ type Server struct {
 	Logger *log.Logger
 }
 
-func NewServer(logger *log.Logger) *Server {
+func NewServer(logger *log.Logger) *http.Server {
 	// Создаем новый мультиплексор (роутер)
 	mux := http.NewServeMux()
 
@@ -29,13 +29,5 @@ func NewServer(logger *log.Logger) *Server {
 		WriteTimeout: 10 * time.Second,
 		IdleTimeout:  15 * time.Second,
 	}
-	return &Server{
-		Logger: logger,
-		Server: s,
-	}
-
-}
-func (s *Server) Run() error {
-	s.Logger.Println("Server started on :8080")
-	return s.Server.ListenAndServe()
+	return s
 }
