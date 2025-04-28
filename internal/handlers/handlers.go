@@ -18,7 +18,7 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	data, err := os.ReadFile("../index.html")
+	data, err := os.ReadFile("index.html")
 	if err != nil {
 		http.Error(w, "Failed to read index.html: "+err.Error(), http.StatusInternalServerError)
 		return
