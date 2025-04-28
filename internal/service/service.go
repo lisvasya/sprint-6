@@ -22,7 +22,7 @@ func Convert(input string) (string, error) {
 		// Если это текст, конвертируем в код Морзе
 		return morse.ToMorse(input), nil
 	} else {
-		return "", errors.New("не удалось определить формат данных")
+		return "", errors.New("failed to determine the data format")
 	}
 }
 
