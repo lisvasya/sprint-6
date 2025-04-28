@@ -15,9 +15,8 @@ func Convert(input string) (string, error) {
 	}
 
 	// Определяем, что это — Морзе или текст.
-	// Код Морзе состоит из точек (.), тире (-), пробелов и слэшей (/).
 	// Если найдём символы, которые не входят в этот набор — считаем текстом.
-	morseChars := ".- /"
+	morseChars := ".- "
 	isMorse := true
 	for _, r := range input {
 		if !strings.ContainsRune(morseChars, r) {
