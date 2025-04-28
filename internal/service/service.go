@@ -1,6 +1,7 @@
 package service
 
 import (
+	"errors"
 	"strings"
 
 	"github.com/Yandex-Practicum/go1fl-sprint6-final/pkg/morse"
@@ -8,26 +9,36 @@ import (
 
 // Convert определяет тип переданной строки и конвертирует её в соответствующий формат
 func Convert(input string) (string, error) {
-	// Убираем лишние пробелы по бокам строки
 	input = strings.TrimSpace(input)
-
-	// Если строка состоит только из символов Морзе (точки, тире и пробелы),
-	// то мы предполагаем, что это код Морзе, и конвертируем его в обычный текст
-	if isMorseCode(input) {
-		return morse.ToText(input), nil
+	if input == "" {
+		return "", errors.New("empty line")
 	}
 
-	// Если это обычный текст, то конвертируем его в код Морзе
-	return morse.ToMorse(input), nil
-}
-
-// Проверка, является ли строка кодом Морзе
-func isMorseCode(input string) bool {
-	// Строка в коде Морзе должна содержать только точку, тире и пробелы
-	for _, ch := range input {
-		if ch != '.' && ch != '-' && ch != ' ' {
-			return false
+	// Определяем, что это — Морзе или текст.
+	// Код Морзе состоит из точек (.), тире (-), пробелов и слэшей (/).
+	// Если найдём символы, которые не входят в этот набор — считаем текстом.
+	morseChars := ".- /"
+	isMorse := true
+	for _, r := range input {
+		if !strings.ContainsRune(morseChars, r) {
+			isMorse = false
+			break
 		}
 	}
-	return true
+
+	if isMorse {
+		// Конвертируем из Морзе в текст
+		text := morse.ToText(input)
+		if strings.TrimSpace(text) == "" {
+			return "", errors.New("incorrect Morze code")
+		}
+		return text, nil
+	} else {
+		// Конвертируем из текста в Морзе
+		morseCode := morse.ToMorse(input)
+		if strings.TrimSpace(morseCode) == "" {
+			return "", errors.New("incorrect text for conversion")
+		}
+		return morseCode, nil
+	}
 }
